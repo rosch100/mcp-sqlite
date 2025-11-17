@@ -1,0 +1,104 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example.mcp'
+version = '0.1.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+application {
+    mainClass = 'com.example.mcp.sqlite.McpServer'
+}
+
+repositories {
+    mavenCentral()
+}
+
+// SQLite JDBC driver version
+def sqliteJdbcVersion = '3.50.1.0'
+def sqliteJdbcFile = file("libs/sqlite-jdbc-${sqliteJdbcVersion}.jar")
+
+// Task to download SQLite JDBC driver
+task downloadSqliteJdbc {
+    description = 'Downloads the SQLite JDBC driver with encryption support'
+    group = 'build'
+    
+    outputs.file(sqliteJdbcFile)
+    
+    doLast {
+        if (!sqliteJdbcFile.exists()) {
+            println "Downloading SQLite JDBC driver ${sqliteJdbcVersion}..."
+            sqliteJdbcFile.parentFile.mkdirs()
+            
+            // Try GitHub releases first, fallback to Maven Central
+            def urls = [
+                "https://github.com/Willena/sqlite-jdbc-crypt/releases/download/${sqliteJdbcVersion}/sqlite-jdbc-${sqliteJdbcVersion}.jar",
+                "https://repo1.maven.org/maven2/io/github/willena/sqlite-jdbc/${sqliteJdbcVersion}/sqlite-jdbc-${sqliteJdbcVersion}.jar"
+            ]
+            
+            def downloaded = false
+            def lastException = null
+            
+            for (def url : urls) {
+                try {
+                    println "Trying: ${url}"
+                    def connection = new URL(url).openConnection()
+                    connection.setRequestProperty("User-Agent", "Gradle Build")
+                    connection.setConnectTimeout(10000)
+                    connection.setReadTimeout(60000)
+                    connection.connect()
+                    
+                    def responseCode = connection.responseCode
+                    if (responseCode == 200) {
+                        sqliteJdbcFile.withOutputStream { out ->
+                            connection.inputStream.withCloseable { input ->
+                                out << input
+                            }
+                        }
+                        println "Downloaded ${sqliteJdbcFile.name} (${sqliteJdbcFile.length()} bytes) from ${url}"
+                        downloaded = true
+                        break
+                    } else {
+                        println "HTTP ${responseCode} from ${url}"
+                    }
+                } catch (Exception e) {
+                    lastException = e
+                    println "Failed to download from ${url}: ${e.class.simpleName} - ${e.message}"
+                    if (e.stackTrace) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+            
+            if (!downloaded) {
+                throw new GradleException("Failed to download SQLite JDBC driver from all sources. Last error: ${lastException?.message ?: 'Unknown error'}")
+            }
+        } else {
+            println "SQLite JDBC driver already exists: ${sqliteJdbcFile.name}"
+        }
+    }
+}
+
+// Ensure download happens before compilation
+compileJava.dependsOn downloadSqliteJdbc
+
+dependencies {
+    implementation files(sqliteJdbcFile)
+    implementation 'com.google.code.gson:gson:2.11.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.test {
+    useJUnitPlatform()
+}

@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "encrypted-sqlite": {
+      "command": "/path/to/mcp-sqlite/build/install/mcp-sqlite/bin/mcp-sqlite",
+      "args": [
+        "--args",
+        "{\"dbPath\":\"/path/to/your/database.sqlite\",\"passphrase\":\"your-passphrase\"}"
+      ],
+      "cwd": "/path/to/mcp-sqlite",
+      "transport": "stdio",
+      "env": {
+        "JAVA_HOME": "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home",
+        "PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/opt/homebrew/sbin"
+      }
+    },
+    "encrypted-sqlite-with-custom-cipher": {
+      "command": "/path/to/mcp-sqlite/build/install/mcp-sqlite/bin/mcp-sqlite",
+      "args": [
+        "--args",
+        "{\"dbPath\":\"/path/to/your/database.sqlite\",\"passphrase\":\"your-passphrase\",\"cipherProfile\":{\"name\":\"SQLCipher 4 defaults\",\"pageSize\":4096,\"kdfIterations\":256000,\"hmacAlgorithm\":\"HMAC_SHA512\",\"kdfAlgorithm\":\"PBKDF2_HMAC_SHA512\"}}"
+      ],
+      "cwd": "/path/to/mcp-sqlite",
+      "transport": "stdio",
+      "env": {
+        "JAVA_HOME": "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home",
+        "PATH": "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/opt/homebrew/sbin"
+      }
+    }
+  }
+}
+

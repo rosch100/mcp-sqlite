@@ -1,0 +1,23 @@
+Encrypted SQLite MCP Server
+Copyright 2025 rosch100
+
+This product includes software developed by:
+
+1. sqlite-jdbc-crypt
+   - Copyright (c) Willena and contributors
+   - Licensed under Apache License 2.0
+   - Source: https://github.com/Willena/sqlite-jdbc-crypt
+
+2. Gson
+   - Copyright (c) Google Inc.
+   - Licensed under Apache License 2.0
+   - Source: https://github.com/google/gson
+
+3. JUnit Jupiter
+   - Copyright (c) JUnit Team
+   - Licensed under Eclipse Public License 2.0
+   - Source: https://junit.org/junit5/
+
+This product is licensed under Apache License 2.0.
+See LICENSE file for details.
+

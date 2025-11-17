@@ -1,0 +1,47 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# Test output
+test-results/
+reports/
+
+# Distribution
+distributions/
+
+# SQLite JDBC driver (downloaded automatically during build)
+libs/sqlite-jdbc-*.jar
+!libs/.gitkeep
+
+# Local configuration
+local.properties
+
+# Python virtual environments (if any)
+.venv/
+venv/
+env/
+*.pyc
+__pycache__/
+
