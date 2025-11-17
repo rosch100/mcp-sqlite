@@ -1,43 +1,42 @@
 #!/bin/bash
 
-# Skript zum Speichern eines Verschlüsselungsschlüssels in der macOS Keychain
-# Verwendung: ./store-key-in-keychain.sh [<schlüssel>|--generate]
+# Script to store an encryption key in macOS Keychain
+# Usage: ./store-key-in-keychain.sh [<key>|--generate]
 
 set -e
 
-JAR_FILE="build/libs/mcp-sqlite-0.1.0.jar"
+JAR_FILE="build/libs/mcp-sqlite-0.2.1.jar"
 
-# Prüfe ob macOS
+# Check if macOS
 if [[ "$OSTYPE" != "darwin"* ]]; then
-    echo "Fehler: Dieses Skript funktioniert nur auf macOS."
+    echo "Error: This script only works on macOS."
     exit 1
 fi
 
-# Prüfe ob JAR existiert
+# Check if JAR exists
 if [ ! -f "$JAR_FILE" ]; then
-    echo "Fehler: $JAR_FILE nicht gefunden."
-    echo "Bitte bauen Sie das Projekt zuerst: ./gradlew build"
+    echo "Error: $JAR_FILE not found."
+    echo "Please build the project first: ./gradlew build"
     exit 1
 fi
 
 if [ $# -eq 0 ]; then
-    echo "Verwendung: $0 [<schlüssel>|--generate]"
+    echo "Usage: $0 [<key>|--generate]"
     echo ""
-    echo "Beispiele:"
-    echo "  # Automatisch generieren und speichern:"
+    echo "Examples:"
+    echo "  # Automatically generate and store:"
     echo "  $0 --generate"
     echo ""
-    echo "  # Mit vorhandenem Schlüssel:"
-    echo "  $0 \"<base64-schlüssel>\""
+    echo "  # With existing key:"
+    echo "  $0 \"<base64-key>\""
     echo ""
     exit 1
 fi
 
 if [ "$1" = "--generate" ]; then
-    echo "Generiere neuen Schlüssel und speichere ihn in der Keychain..."
+    echo "Generating new key and storing it in Keychain..."
     java -cp "$JAR_FILE" com.example.mcp.sqlite.util.StoreKeyInKeychain --generate
 else
-    echo "Speichere Schlüssel in der Keychain..."
+    echo "Storing key in Keychain..."
     java -cp "$JAR_FILE" com.example.mcp.sqlite.util.StoreKeyInKeychain "$1"
 fi
-

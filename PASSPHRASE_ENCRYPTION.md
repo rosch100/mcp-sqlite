@@ -1,86 +1,86 @@
-# Passphrase-Verschlüsselung - Schnellanleitung
+# Passphrase Encryption - Quick Guide
 
-Diese Anleitung zeigt Ihnen, wie Sie Ihre Passphrase für den lokalen MCP SQLite Server verschlüsseln können.
+This guide shows you how to encrypt your passphrase for the MCP SQLite Server.
 
-## macOS Keychain (Empfohlen für macOS)
+## macOS Keychain (Recommended for macOS)
 
-Auf macOS können Sie den Verschlüsselungsschlüssel sicher in der Keychain speichern:
+On macOS, you can securely store the encryption key in the Keychain:
 
-### Schritt 1: Projekt bauen
+### Step 1: Build the Project
 ```bash
 ./gradlew build
 ```
 
-### Schritt 2: Schlüssel generieren und in Keychain speichern
+### Step 2: Generate and Store Key in Keychain
 ```bash
 ./store-key-in-keychain.sh --generate
 ```
 
-Das war's! Der Schlüssel wird automatisch aus der Keychain geladen, wenn keine Umgebungsvariable gesetzt ist.
+That's it! The key will be automatically loaded from the Keychain when no environment variable is set.
 
-### Schritt 3: Passphrase verschlüsseln
+### Step 3: Encrypt Passphrase
 ```bash
-./encrypt-passphrase.sh "ihre-plain-passphrase"
+./encrypt-passphrase.sh "your-plain-passphrase"
 ```
 
-**Vorteile der Keychain:**
-- ✅ Schlüssel wird sicher verschlüsselt gespeichert
-- ✅ Keine Umgebungsvariablen nötig
-- ✅ Automatische Entsperrung mit macOS-Benutzerpasswort
-- ✅ Funktioniert systemweit für alle Anwendungen
+**Benefits of Keychain:**
+- ✅ Key is securely encrypted and stored by macOS
+- ✅ No environment variables needed
+- ✅ Automatic unlock with macOS user password
+- ✅ Works system-wide for all applications
 
 ---
 
-## Umgebungsvariable (Alternative/Cross-Platform)
+## Environment Variable (Alternative/Cross-Platform)
 
-## Schritt 1: Projekt bauen
+### Step 1: Build the Project
 
-Stellen Sie sicher, dass das Projekt gebaut wurde:
+Make sure the project is built:
 
 ```bash
 ./gradlew build
 ```
 
-## Schritt 2: Verschlüsselungsschlüssel generieren
+### Step 2: Generate Encryption Key
 
-Generieren Sie einen neuen Verschlüsselungsschlüssel:
+Generate a new encryption key:
 
 ```bash
 ./generate-key.sh
 ```
 
-Das Skript gibt Ihnen einen Schlüssel aus. Kopieren Sie diesen.
+The script will output a key. Copy it.
 
-## Schritt 3: Schlüssel als Umgebungsvariable setzen
+### Step 3: Set Key as Environment Variable
 
-Setzen Sie den Schlüssel als Umgebungsvariable:
+Set the key as an environment variable:
 
 ```bash
-export MCP_SQLITE_ENCRYPTION_KEY="<ihr-generierter-schlüssel>"
+export MCP_SQLITE_ENCRYPTION_KEY="<your-generated-key>"
 ```
 
-**Wichtig:** Für dauerhafte Verwendung fügen Sie diese Zeile zu Ihrer Shell-Konfiguration hinzu:
-- Bash: `~/.bashrc` oder `~/.bash_profile`
+**Important:** For permanent use, add this line to your shell configuration:
+- Bash: `~/.bashrc` or `~/.bash_profile`
 - Zsh: `~/.zshrc`
 - Fish: `~/.config/fish/config.fish`
 
 ```bash
-echo 'export MCP_SQLITE_ENCRYPTION_KEY="<ihr-schlüssel>"' >> ~/.zshrc
+echo 'export MCP_SQLITE_ENCRYPTION_KEY="<your-key>"' >> ~/.zshrc
 ```
 
-## Schritt 4: Passphrase verschlüsseln
+### Step 4: Encrypt Passphrase
 
-Verschlüsseln Sie Ihre Passphrase:
+Encrypt your passphrase:
 
 ```bash
-./encrypt-passphrase.sh "ihre-plain-passphrase"
+./encrypt-passphrase.sh "your-plain-passphrase"
 ```
 
-Das Skript gibt Ihnen die verschlüsselte Passphrase aus (beginnt mit `encrypted:`).
+The script will output the encrypted passphrase (starts with `encrypted:`).
 
-## Schritt 5: In Konfiguration verwenden
+### Step 5: Use in Configuration
 
-Verwenden Sie die verschlüsselte Passphrase in Ihrer MCP-Konfiguration (z.B. `~/.cursor/mcp.json`):
+Use the encrypted passphrase in your MCP configuration (e.g., `~/.cursor/mcp.json`):
 
 ```json
 {
@@ -89,64 +89,63 @@ Verwenden Sie die verschlüsselte Passphrase in Ihrer MCP-Konfiguration (z.B. `~
       "command": "/path/to/mcp-sqlite/build/install/mcp-sqlite/bin/mcp-sqlite",
       "args": [
         "--args",
-        "{\"dbPath\":\"/path/to/your/database.sqlite\",\"passphrase\":\"encrypted:<verschlüsselte-passphrase>\"}"
+        "{\"db_path\":\"/path/to/your/database.sqlite\",\"passphrase\":\"encrypted:<encrypted-passphrase>\"}"
       ],
       "env": {
-        "MCP_SQLITE_ENCRYPTION_KEY": "<ihr-verschlüsselungsschlüssel>"
+        "MCP_SQLITE_ENCRYPTION_KEY": "<your-encryption-key>"
       }
     }
   }
 }
 ```
 
-## Alternative: Manuelle Verwendung
+## Alternative: Manual Usage
 
-Falls Sie die Skripte nicht verwenden möchten:
+If you don't want to use the scripts:
 
-### Schlüssel generieren:
+### Generate Key:
 ```bash
-java -cp build/libs/mcp-sqlite-0.1.0.jar com.example.mcp.sqlite.util.GenerateKey
+java -cp build/libs/mcp-sqlite-0.2.1.jar com.example.mcp.sqlite.util.GenerateKey
 ```
 
-### Passphrase verschlüsseln:
+### Encrypt Passphrase:
 ```bash
-export MCP_SQLITE_ENCRYPTION_KEY="<ihr-schlüssel>"
-java -cp build/libs/mcp-sqlite-0.1.0.jar com.example.mcp.sqlite.util.EncryptPassphrase "ihre-passphrase"
+export MCP_SQLITE_ENCRYPTION_KEY="<your-key>"
+java -cp build/libs/mcp-sqlite-0.2.1.jar com.example.mcp.sqlite.util.EncryptPassphrase "your-passphrase"
 ```
 
-## Sicherheitshinweise
+## Security Considerations
 
-- ⚠️ **WICHTIG:** Der Verschlüsselungsschlüssel (`MCP_SQLITE_ENCRYPTION_KEY`) **MUSS** gesetzt sein, sonst funktioniert die Entschlüsselung nicht
-- 🔒 Bewahren Sie den Schlüssel sicher auf und committen Sie ihn niemals in Version Control
-- 🔑 Verwenden Sie verschiedene Schlüssel für verschiedene Umgebungen (Entwicklung, Produktion)
-- 🔄 Rotieren Sie den Schlüssel regelmäßig und verschlüsseln Sie alle Passphrasen neu
+- ⚠️ **IMPORTANT:** The encryption key (`MCP_SQLITE_ENCRYPTION_KEY`) **MUST** be set, otherwise decryption will fail
+- 🔒 Store the key securely and never commit it to version control
+- 🔑 Use different keys for different environments (development, production)
+- 🔄 Rotate the key regularly and re-encrypt all passphrases
 
-## Beispiel-Workflow
+## Example Workflow
 
 ```bash
-# 1. Projekt bauen
+# 1. Build project
 ./gradlew build
 
-# 2. Schlüssel generieren und setzen
-KEY=$(./generate-key.sh | grep -A 1 "Verschlüsselungsschlüssel:" | tail -1)
+# 2. Generate and set key
+KEY=$(./generate-key.sh | grep -A 1 "Encryption key:" | tail -1)
 export MCP_SQLITE_ENCRYPTION_KEY="$KEY"
 
-# 3. Passphrase verschlüsseln
-./encrypt-passphrase.sh "meine-geheime-passphrase"
+# 3. Encrypt passphrase
+./encrypt-passphrase.sh "my-secret-passphrase"
 
-# 4. Ausgabe kopieren und in mcp.json verwenden
+# 4. Copy output and use in mcp.json
 ```
 
 ## Troubleshooting
 
-### Fehler: "MCP_SQLITE_ENCRYPTION_KEY ist nicht gesetzt"
-- Stellen Sie sicher, dass die Umgebungsvariable gesetzt ist: `echo $MCP_SQLITE_ENCRYPTION_KEY`
-- Setzen Sie sie mit: `export MCP_SQLITE_ENCRYPTION_KEY="<schlüssel>"`
+### Error: "MCP_SQLITE_ENCRYPTION_KEY is not set"
+- Make sure the environment variable is set: `echo $MCP_SQLITE_ENCRYPTION_KEY`
+- Set it with: `export MCP_SQLITE_ENCRYPTION_KEY="<key>"`
 
-### Fehler: "Der Schlüssel ist zu schwach"
-- Verwenden Sie immer `generate-key.sh` oder `GenerateKey` Tool zum Generieren
-- Verwenden Sie niemals vorhersagbare Schlüssel
+### Error: "Key is too weak"
+- Always use `generate-key.sh` or `GenerateKey` tool to generate keys
+- Never use predictable keys
 
-### Fehler: "Ungültiges Base64-Format"
-- Stellen Sie sicher, dass der Schlüssel korrekt kopiert wurde (keine Leerzeichen, vollständig)
-
+### Error: "Invalid Base64 format"
+- Make sure the key was copied correctly (no spaces, complete)
