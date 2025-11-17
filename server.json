@@ -41,7 +41,7 @@
             "command": "${SERVER_PATH}/build/install/mcp-sqlite/bin/mcp-sqlite",
             "args": [
               "--args",
-              "{\"dbPath\":\"${DB_PATH}\",\"passphrase\":\"${DB_PASSPHRASE}\"}"
+              "{\"db_path\":\"${DB_PATH}\",\"passphrase\":\"${DB_PASSPHRASE}\"}"
             ]
           }
         }

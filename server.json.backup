@@ -1,0 +1,82 @@
+{
+  "name": "encrypted-sqlite",
+  "displayName": "Encrypted SQLite MCP Server",
+  "description": "MCP server for working with SQLCipher 4 encrypted SQLite databases. Provides tools to read database structures, query tables, and perform CRUD operations.",
+  "version": "0.1.0",
+  "author": "rosch100",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rosch100/mcp-sqlite.git"
+  },
+  "homepage": "https://github.com/rosch100/mcp-sqlite",
+  "bugs": {
+    "url": "https://github.com/rosch100/mcp-sqlite/issues"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "sqlite",
+    "sqlcipher",
+    "encryption",
+    "database",
+    "java",
+    "crud",
+    "database-tools"
+  ],
+  "language": "Java",
+  "runtime": {
+    "type": "java",
+    "version": "17+"
+  },
+  "transport": {
+    "type": "stdio"
+  },
+  "tools": [
+    {
+      "name": "listTables",
+      "description": "List all tables in the database with their columns and metadata"
+    },
+    {
+      "name": "getTableData",
+      "description": "Read data from a table with optional filtering, column selection, and pagination"
+    },
+    {
+      "name": "execQuery",
+      "description": "Execute arbitrary SQL statements (SELECT, INSERT, UPDATE, DELETE, DDL)"
+    },
+    {
+      "name": "insertOrUpdate",
+      "description": "Perform UPSERT operations (INSERT or UPDATE on conflict)"
+    },
+    {
+      "name": "deleteRows",
+      "description": "Delete rows from a table based on filters"
+    }
+  ],
+  "features": [
+    "SQLCipher 4 support",
+    "Database exploration",
+    "Query support",
+    "CRUD operations",
+    "Configurable cipher profiles"
+  ],
+  "installation": {
+    "type": "source",
+    "instructions": "git clone https://github.com/rosch100/mcp-sqlite.git && cd mcp-sqlite && ./gradlew build && ./gradlew installDist"
+  },
+  "configuration": {
+    "example": {
+      "mcpServers": {
+        "encrypted-sqlite": {
+          "command": "/path/to/mcp-sqlite/build/install/mcp-sqlite/bin/mcp-sqlite",
+          "args": [
+            "--args",
+            "{\"dbPath\":\"/path/to/your/database.sqlite\",\"passphrase\":\"your-passphrase\"}"
+          ]
+        }
+      }
+    }
+  }
+}
+

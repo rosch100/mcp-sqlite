@@ -2,6 +2,7 @@ package com.example.mcp.sqlite;
 
 import com.example.mcp.sqlite.config.CipherProfile;
 import com.example.mcp.sqlite.config.DatabaseConfig;
+import com.example.mcp.sqlite.util.SqlIdentifierValidator;
 import com.example.mcp.sqlite.util.SqliteUtil;
 
 import java.sql.Connection;
@@ -11,7 +12,6 @@ import java.sql.SQLException;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
@@ -54,6 +54,11 @@ public class EncryptedSqliteClient {
 
         SQLiteMCConfig mcConfig = builder.build();
         mcConfig.setPragma(SQLiteConfig.Pragma.FOREIGN_KEYS, "ON");
+        // Set busy timeout to 30 seconds to wait for locks to be released
+        mcConfig.setBusyTimeout(30000);
+        // Note: Read-only mode is set, but executeQuery can still execute writes
+        // This is intentional for the execute_sql tool, but should be documented
+        mcConfig.setReadOnly(true);
 
         String url = "jdbc:sqlite:" + config.databasePath();
         return mcConfig.createConnection(url);
@@ -111,6 +116,7 @@ public class EncryptedSqliteClient {
     }
 
     public List<ColumnMetadata> describeColumns(Connection connection, String tableName) throws SQLException {
+        SqlIdentifierValidator.validateIdentifier(tableName, "tableName");
         List<ColumnMetadata> columns = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement("PRAGMA table_info(\"" + tableName + "\")")) {
             try (ResultSet rs = ps.executeQuery()) {
@@ -140,6 +146,14 @@ public class EncryptedSqliteClient {
                                    List<String> columns,
                                    int limit,
                                    int offset) throws SQLException {
+        SqlIdentifierValidator.validateIdentifier(tableName, "tableName");
+        SqlIdentifierValidator.validateIdentifiers(columns, "columns");
+        if (filters != null) {
+            for (String column : filters.keySet()) {
+                SqlIdentifierValidator.validateIdentifier(column, "filter column");
+            }
+        }
+        
         String resolvedColumns = (columns == null || columns.isEmpty()) ? "*" : String.join(", ", columns);
         StringBuilder sql = new StringBuilder("SELECT ").append(resolvedColumns)
                 .append(" FROM \"").append(tableName).append("\"");
@@ -170,7 +184,22 @@ public class EncryptedSqliteClient {
         }
     }
 
+    /**
+     * Executes an arbitrary SQL query. 
+     * 
+     * WARNING: This method executes raw SQL without parameterization. 
+     * It should only be used when the SQL is trusted or when parameterized queries are not possible.
+     * For user-provided SQL, ensure proper validation and sanitization is performed before calling this method.
+     * 
+     * @param connection The database connection
+     * @param sql The SQL statement to execute
+     * @return QueryResult containing the query results or affected rows
+     * @throws SQLException if a database error occurs
+     */
     public QueryResult executeQuery(Connection connection, String sql) throws SQLException {
+        if (sql == null || sql.trim().isEmpty()) {
+            throw new IllegalArgumentException("SQL statement cannot be null or empty");
+        }
         try (Statement statement = connection.createStatement()) {
             boolean hasResultSet = statement.execute(sql);
             if (hasResultSet) {
@@ -187,9 +216,11 @@ public class EncryptedSqliteClient {
                               String tableName,
                               List<String> primaryKeys,
                               List<Map<String, Object>> rows) throws SQLException {
+        SqlIdentifierValidator.validateIdentifier(tableName, "tableName");
         if (primaryKeys == null || primaryKeys.isEmpty()) {
             throw new IllegalArgumentException("primaryKeys must be provided for insertOrUpdate");
         }
+        SqlIdentifierValidator.validateIdentifiers(primaryKeys, "primaryKeys");
         int affected = 0;
         for (Map<String, Object> row : rows) {
             affected += upsertSingleRow(connection, tableName, primaryKeys, row);
@@ -205,6 +236,7 @@ public class EncryptedSqliteClient {
         if (columns.isEmpty()) {
             throw new IllegalArgumentException("Row data must contain at least one column");
         }
+        SqlIdentifierValidator.validateIdentifiers(columns, "row columns");
         String columnList = String.join(", ", columns.stream().map(c -> '\"' + c + '\"').toList());
         String placeholders = String.join(", ", columns.stream().map(c -> "?").toList());
         List<String> assignmentTokens = columns.stream()
@@ -233,8 +265,12 @@ public class EncryptedSqliteClient {
     public int deleteRows(Connection connection,
                           String tableName,
                           Map<String, Object> filters) throws SQLException {
+        SqlIdentifierValidator.validateIdentifier(tableName, "tableName");
         if (filters == null || filters.isEmpty()) {
             throw new IllegalArgumentException("filters are required for deleteRows");
+        }
+        for (String column : filters.keySet()) {
+            SqlIdentifierValidator.validateIdentifier(column, "filter column");
         }
         StringBuilder sql = new StringBuilder("DELETE FROM \"")
                 .append(tableName)
@@ -257,9 +293,99 @@ public class EncryptedSqliteClient {
         }
     }
 
+    public List<IndexMetadata> listIndexes(Connection connection, String tableName) throws SQLException {
+        SqlIdentifierValidator.validateIdentifier(tableName, "tableName");
+        List<IndexMetadata> indexes = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement("PRAGMA index_list(\"" + tableName + "\")")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String indexName = rs.getString("name");
+                    boolean unique = rs.getInt("unique") == 1;
+                    String origin = rs.getString("origin");
+                    
+                    // Hole Index-Spalten
+                    List<String> columns = new ArrayList<>();
+                    try (PreparedStatement ps2 = connection.prepareStatement("PRAGMA index_info(\"" + indexName + "\")")) {
+                        try (ResultSet rs2 = ps2.executeQuery()) {
+                            while (rs2.next()) {
+                                String colName = rs2.getString("name");
+                                if (colName != null) {
+                                    columns.add(colName);
+                                }
+                            }
+                        }
+                    }
+                    
+                    indexes.add(new IndexMetadata(indexName, unique, origin, columns));
+                }
+            }
+        } catch (SQLException ex) {
+            if (isIgnorablePragmaError(ex)) {
+                return List.of();
+            }
+            throw ex;
+        }
+        return indexes;
+    }
+
+    public TableSchemaMetadata getTableSchema(Connection connection, String tableName) throws SQLException {
+        SqlIdentifierValidator.validateIdentifier(tableName, "tableName");
+        // Columns
+        List<ColumnMetadata> columns = describeColumns(connection, tableName);
+        
+        // Indexes
+        List<IndexMetadata> indexes = listIndexes(connection, tableName);
+        
+        // Foreign Keys
+        List<ForeignKeyMetadata> foreignKeys = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement("PRAGMA foreign_key_list(\"" + tableName + "\")")) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    foreignKeys.add(new ForeignKeyMetadata(
+                        rs.getInt("id"),
+                        rs.getInt("seq"),
+                        rs.getString("table"),
+                        rs.getString("from"),
+                        rs.getString("to"),
+                        rs.getString("on_update"),
+                        rs.getString("on_delete"),
+                        rs.getString("match")
+                    ));
+                }
+            }
+        } catch (SQLException ex) {
+            if (!isIgnorablePragmaError(ex)) {
+                throw ex;
+            }
+        }
+        
+        // Table Info (SQL CREATE Statement)
+        String createSql = null;
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT sql FROM sqlite_schema WHERE type='table' AND name=?")) {
+            ps.setString(1, tableName);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    createSql = rs.getString("sql");
+                }
+            }
+        }
+        
+        return new TableSchemaMetadata(tableName, columns, indexes, foreignKeys, createSql);
+    }
+
     public record TableMetadata(String name, List<ColumnMetadata> columns) {}
 
     public record ColumnMetadata(int cid, String name, String type, boolean notNull, String defaultValue, boolean primaryKey) {}
+    
+    public record IndexMetadata(String name, boolean unique, String origin, List<String> columns) {}
+    
+    public record ForeignKeyMetadata(int id, int seq, String table, String from, String to, 
+                                     String onUpdate, String onDelete, String match) {}
+    
+    public record TableSchemaMetadata(String tableName, List<ColumnMetadata> columns, 
+                                     List<IndexMetadata> indexes, List<ForeignKeyMetadata> foreignKeys, 
+                                     String createSql) {}
 
     public record QueryResult(List<String> columns, List<Map<String, Object>> rows, int affectedRows) {
         public static QueryResult from(ResultSet rs) throws SQLException {
