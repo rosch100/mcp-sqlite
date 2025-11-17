@@ -5,15 +5,19 @@ A Model Context Protocol (MCP) server for working with encrypted SQLite database
 ## Features
 
 - 🔐 **SQLCipher Support**: Works with SQLCipher 4 encrypted databases
-- 📊 **Database Exploration**: List tables and columns with metadata
+- 📊 **Database Exploration**: List tables, columns, indexes, and schema metadata
 - 🔍 **Query Support**: Execute arbitrary SQL queries (SELECT, INSERT, UPDATE, DELETE, DDL)
 - 📝 **CRUD Operations**: Insert, update, and delete rows with filtering
 - ⚙️ **Configurable Cipher Profiles**: Support for different SQLCipher configurations
 - 🚀 **MCP Protocol**: Full Model Context Protocol implementation via STDIO
+- 🔒 **Security**: SQL identifier validation to prevent SQL injection
+- 🐛 **Debug Mode**: Optional debug output via `MCP_DEBUG` environment variable
+- 🌐 **Internationalization**: All messages and documentation in English
+- 📏 **Input Validation**: Comprehensive validation for limits, offsets, and identifiers
 
 ## Requirements
 
-- **Java 17** or higher (JDK)
+- **Java 21** or higher (JDK)
 - **Gradle** (wrapper included)
 - SQLite JDBC driver with encryption support (`sqlite-jdbc-3.50.1.0.jar` from [sqlite-jdbc-crypt](https://github.com/Willena/sqlite-jdbc-crypt))
 
