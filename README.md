@@ -41,7 +41,13 @@ The executable will be available at `build/install/mcp-sqlite/bin/mcp-sqlite`.
 
 ## Configuration
 
-### Cursor MCP Configuration
+This MCP server can be used with any MCP-compatible client. The configuration format follows the [Model Context Protocol specification](https://modelcontextprotocol.io/).
+
+### MCP Client Configuration
+
+The server communicates via STDIO (standard input/output) and can be configured in any MCP client. Below are examples for popular clients:
+
+#### Cursor
 
 Add the following to your Cursor `mcp.json` file (typically located at `~/.cursor/mcp.json`):
 
@@ -59,11 +65,35 @@ Add the following to your Cursor `mcp.json` file (typically located at `~/.curso
 }
 ```
 
+#### Claude Desktop
+
+Add the following to your Claude Desktop configuration file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "encrypted-sqlite": {
+      "command": "/path/to/mcp-sqlite/build/install/mcp-sqlite/bin/mcp-sqlite",
+      "args": [
+        "--args",
+        "{\"dbPath\":\"/path/to/your/database.sqlite\",\"passphrase\":\"your-passphrase\"}"
+      ]
+    }
+  }
+}
+```
+
+#### Other MCP Clients
+
+For other MCP clients, refer to their documentation for the configuration format. The server uses the standard MCP protocol via STDIO transport.
+
 **Optional Parameters:**
 
 Most parameters can be omitted if your system is properly configured:
 
-- **`transport`**: Defaults to `"stdio"` (can be omitted)
+- **`transport`**: Defaults to `"stdio"` (can be omitted for most clients)
 - **`cwd`**: Not needed when using absolute paths (can be omitted)
 - **`env`**: Only needed if Java is not in your system PATH
 
@@ -285,7 +315,7 @@ mcp-sqlite/
 
 - Verify Java is installed and accessible: `java -version`
 - Check that `JAVA_HOME` is set correctly in the MCP configuration
-- Review Cursor MCP logs for detailed error messages
+- Review your MCP client logs for detailed error messages
 
 ### FTS (Full-Text Search) tables
 

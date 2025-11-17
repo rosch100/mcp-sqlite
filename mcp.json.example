@@ -1,4 +1,5 @@
 {
+  "_comment": "MCP Server configuration for encrypted SQLite databases. This configuration can be used with any MCP-compatible client (Cursor, Claude Desktop, etc.).",
   "mcpServers": {
     "encrypted-sqlite": {
       "command": "/path/to/mcp-sqlite/build/install/mcp-sqlite/bin/mcp-sqlite",
