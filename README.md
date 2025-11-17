@@ -373,6 +373,38 @@ Lists all indexes of a table.
 }
 ```
 
+## Debug Mode
+
+The server supports optional debug output via the `MCP_DEBUG` environment variable. When enabled, detailed debug information is written to `stderr` (not `stdout`, to comply with MCP protocol requirements).
+
+**Enable debug mode:**
+
+```json
+{
+  "mcpServers": {
+    "encrypted-sqlite": {
+      "command": "/path/to/mcp-sqlite/build/install/mcp-sqlite/bin/mcp-sqlite",
+      "args": [
+        "--args",
+        "{\"db_path\":\"/path/to/your/database.sqlite\",\"passphrase\":\"your-passphrase\"}"
+      ],
+      "env": {
+        "MCP_DEBUG": "true"
+      }
+    }
+  }
+}
+```
+
+**Debug output includes:**
+- Server startup information (Java version, OS, arguments)
+- Configuration parsing details
+- Request processing information
+- Response sizes and structures
+- Database connection details
+
+**Note:** Debug output is disabled by default to keep logs clean. Only enable it when troubleshooting issues.
+
 ## Default Cipher Profile
 
 The server uses **SQLCipher 4 defaults** by default:
