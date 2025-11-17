@@ -3,9 +3,9 @@ package com.example.mcp.sqlite.util;
 import com.example.mcp.sqlite.config.PassphraseEncryption;
 
 /**
- * CLI-Tool zum Generieren eines Verschlüsselungsschlüssels.
+ * CLI tool for generating an encryption key.
  * 
- * Verwendung:
+ * Usage:
  *   java -cp <classpath> com.example.mcp.sqlite.util.GenerateKey
  */
 public class GenerateKey {
@@ -14,10 +14,9 @@ public class GenerateKey {
             String key = PassphraseEncryption.generateKey();
             System.out.println(key);
         } catch (Exception e) {
-            System.err.println("Fehler beim Generieren des Schlüssels: " + e.getMessage());
+            System.err.println("Error generating key: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
         }
     }
 }
-

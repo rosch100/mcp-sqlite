@@ -3,24 +3,24 @@ package com.example.mcp.sqlite.util;
 import com.example.mcp.sqlite.config.PassphraseEncryption;
 
 /**
- * CLI-Tool zum Verschlüsseln von Passphrasen.
+ * CLI tool for encrypting passphrases.
  * 
- * Verwendung:
+ * Usage:
  *   java -cp <classpath> com.example.mcp.sqlite.util.EncryptPassphrase <passphrase>
  * 
- * Oder mit Umgebungsvariable für den Schlüssel:
+ * Or with environment variable for the key:
  *   MCP_SQLITE_ENCRYPTION_KEY=<key> java -cp <classpath> com.example.mcp.sqlite.util.EncryptPassphrase <passphrase>
  */
 public class EncryptPassphrase {
     public static void main(String[] args) {
         if (args.length == 0) {
-            System.err.println("Verwendung: EncryptPassphrase <passphrase>");
+            System.err.println("Usage: EncryptPassphrase <passphrase>");
             System.err.println("");
-            System.err.println("Beispiel:");
-            System.err.println("  java -cp ... EncryptPassphrase \"meine-passphrase\"");
+            System.err.println("Example:");
+            System.err.println("  java -cp ... EncryptPassphrase \"my-passphrase\"");
             System.err.println("");
-            System.err.println("Hinweis: Setzen Sie MCP_SQLITE_ENCRYPTION_KEY als Umgebungsvariable,");
-            System.err.println("         um einen benutzerdefinierten Verschlüsselungsschlüssel zu verwenden.");
+            System.err.println("Note: Set MCP_SQLITE_ENCRYPTION_KEY as an environment variable");
+            System.err.println("      to use a custom encryption key.");
             System.exit(1);
         }
         
@@ -30,16 +30,15 @@ public class EncryptPassphrase {
             PassphraseEncryption encryption = PassphraseEncryption.fromEnvironment();
             String encrypted = encryption.encrypt(passphrase);
             
-            System.out.println("Verschlüsselte Passphrase:");
+            System.out.println("Encrypted passphrase:");
             System.out.println(encrypted);
             System.out.println("");
-            System.out.println("Verwenden Sie diese verschlüsselte Passphrase in Ihrer Konfiguration");
-            System.out.println("mit dem Präfix 'encrypted:' (bereits enthalten).");
+            System.out.println("Use this encrypted passphrase in your configuration");
+            System.out.println("with the prefix 'encrypted:' (already included).");
         } catch (Exception e) {
-            System.err.println("Fehler beim Verschlüsseln: " + e.getMessage());
+            System.err.println("Error encrypting: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
         }
     }
 }
-
