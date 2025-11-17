@@ -183,12 +183,12 @@ Use your encryption key directly.
         "--rm",
         "-i",
         "-e",
-        "MCP_SQLITE_ENCRYPTION_KEY=REMOVED_ENCRYPTION_KEY=",
+        "MCP_SQLITE_ENCRYPTION_KEY=your-encryption-key-here",
         "-v",
-        "/Users/username/Library/Containers/com.moneymoney-app.retail/Data/Library/Application Support/MoneyMoney/Database/MoneyMoney.sqlite:/data/database.sqlite:ro",
+        "/Users/username/path/to/your/database.sqlite:/data/database.sqlite:ro",
         "ghcr.io/rosch100/mcp-sqlite:0.2.2",
         "--args",
-        "{\"db_path\":\"/data/database.sqlite\",\"passphrase\":\"encrypted:REMOVED_ENCRYPTED_PASSPHRASE\"}"
+        "{\"db_path\":\"/data/database.sqlite\",\"passphrase\":\"encrypted:your-encrypted-passphrase-here\"}"
       ]
     }
   }
