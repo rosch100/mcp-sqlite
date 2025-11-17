@@ -7,8 +7,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Keychain-basierte Schlüsselspeicherung für macOS.
- * Nutzt das macOS security Command-Line Tool für den Zugriff auf die Keychain.
+ * Keychain-based key storage for macOS.
+ * Uses the macOS security command-line tool to access the Keychain.
  */
 public final class KeychainKeyStore {
     private static final String KEYCHAIN_SERVICE = "mcp-sqlite";
@@ -16,73 +16,73 @@ public final class KeychainKeyStore {
     private static final String SECURITY_CMD = "/usr/bin/security";
     
     /**
-     * Prüft, ob macOS Keychain verfügbar ist.
+     * Checks if macOS Keychain is available.
      * 
-     * @return true wenn Keychain verfügbar ist
+     * @return true if Keychain is available
      */
     public static boolean isAvailable() {
         String osName = System.getProperty("os.name", "").toLowerCase();
-        // Prüfe auf macOS (kann "Mac OS X", "macOS", oder ähnlich sein)
-        // Auch prüfe auf "darwin" für Unix-Systeme
+        // Check for macOS (can be "Mac OS X", "macOS", or similar)
+        // Also check for "darwin" for Unix systems
         boolean isMacOS = osName.contains("mac") || osName.contains("darwin");
         
         if (!isMacOS) {
             return false;
         }
         
-        // Prüfe ob security Command verfügbar ist
-        // Verwende "help" statt "--version", da --version nicht unterstützt wird
+        // Check if security command is available
+        // Use "help" instead of "--version", as --version is not supported
         try {
             Process process = new ProcessBuilder(SECURITY_CMD, "help").start();
-            // Warte kurz und prüfe ob der Prozess läuft
+            // Wait briefly and check if the process is running
             Thread.sleep(100);
             if (!process.isAlive()) {
                 int exitCode = process.exitValue();
-                // Exit Code 0 oder 2 sind beide OK (2 bedeutet nur, dass kein Command angegeben wurde)
+                // Exit codes 0 or 2 are both OK (2 just means no command was specified)
                 return exitCode == 0 || exitCode == 2;
             }
             process.destroy();
-            return true; // Prozess läuft noch, also ist das Tool verfügbar
+            return true; // Process is still running, so the tool is available
         } catch (Exception e) {
-            // Wenn die Datei nicht existiert oder nicht ausführbar ist, ist Keychain nicht verfügbar
+            // If the file doesn't exist or is not executable, Keychain is not available
             return false;
         }
     }
     
     /**
-     * Speichert einen Verschlüsselungsschlüssel in der macOS Keychain.
+     * Stores an encryption key in the macOS Keychain.
      * 
-     * @param keyBase64 Der Base64-kodierte Verschlüsselungsschlüssel
-     * @throws IOException wenn der Schlüssel nicht gespeichert werden kann
+     * @param keyBase64 The Base64-encoded encryption key
+     * @throws IOException if the key cannot be stored
      */
     public static void storeKey(String keyBase64) throws IOException {
         if (!isAvailable()) {
-            throw new UnsupportedOperationException("macOS Keychain ist nicht verfügbar");
+            throw new UnsupportedOperationException("macOS Keychain is not available");
         }
         
         if (keyBase64 == null || keyBase64.isEmpty()) {
-            throw new IllegalArgumentException("Schlüssel darf nicht leer sein");
+            throw new IllegalArgumentException("Key must not be empty");
         }
         
         try {
-            // Entferne vorhandenen Eintrag falls vorhanden
+            // Remove existing entry if present
             deleteKey();
             
-            // Speichere neuen Schlüssel
+            // Store new key
             ProcessBuilder pb = new ProcessBuilder(
                 SECURITY_CMD,
                 "add-generic-password",
                 "-a", KEYCHAIN_ACCOUNT,
                 "-s", KEYCHAIN_SERVICE,
                 "-w", keyBase64,
-                "-U" // Update falls vorhanden
+                "-U" // Update if present
             );
             
             Process process = pb.start();
             int exitCode = process.waitFor();
             
             if (exitCode != 0) {
-                // Lese Fehlerausgabe
+                // Read error output
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(process.getErrorStream()))) {
                     StringBuilder error = new StringBuilder();
@@ -90,20 +90,20 @@ public final class KeychainKeyStore {
                     while ((line = reader.readLine()) != null) {
                         error.append(line).append("\n");
                     }
-                    throw new IOException("Fehler beim Speichern in Keychain: " + error.toString());
+                    throw new IOException("Error storing in Keychain: " + error.toString());
                 }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Unterbrochen beim Speichern in Keychain", e);
+            throw new IOException("Interrupted while storing in Keychain", e);
         }
     }
     
     /**
-     * Lädt einen Verschlüsselungsschlüssel aus der macOS Keychain.
+     * Loads an encryption key from the macOS Keychain.
      * 
-     * @return Der Base64-kodierte Verschlüsselungsschlüssel oder null wenn nicht gefunden
-     * @throws IOException wenn ein Fehler beim Zugriff auf die Keychain auftritt
+     * @return The Base64-encoded encryption key or null if not found
+     * @throws IOException if an error occurs while accessing the Keychain
      */
     public static String loadKey() throws IOException {
         if (!isAvailable()) {
@@ -116,12 +116,12 @@ public final class KeychainKeyStore {
                 "find-generic-password",
                 "-a", KEYCHAIN_ACCOUNT,
                 "-s", KEYCHAIN_SERVICE,
-                "-w" // Nur Passwort ausgeben
+                "-w" // Output password only
             );
             
             Process process = pb.start();
             
-            // Lese Ausgabe
+            // Read output
             StringBuilder output = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(process.getInputStream()))) {
@@ -131,15 +131,15 @@ public final class KeychainKeyStore {
                 }
             }
             
-            // Warte auf Prozess und lese Fehlerausgabe falls vorhanden
+            // Wait for process and read error output if present
             int exitCode = process.waitFor();
             
             if (exitCode != 0) {
-                // Prüfe ob der Eintrag einfach nicht existiert
+                // Check if the entry simply doesn't exist
                 if (exitCode == 44) { // 44 = item not found
                     return null;
                 }
-                // Lese Fehlerausgabe für besseres Debugging
+                // Read error output for better debugging
                 StringBuilder errorOutput = new StringBuilder();
                 try (BufferedReader errorReader = new BufferedReader(
                         new InputStreamReader(process.getErrorStream()))) {
@@ -148,11 +148,11 @@ public final class KeychainKeyStore {
                         errorOutput.append(errorLine).append("\n");
                     }
                 }
-                // Wenn Fehlerausgabe vorhanden ist, werfe Exception
+                // If error output is present, throw exception
                 if (errorOutput.length() > 0) {
-                    throw new IOException("Fehler beim Laden aus Keychain (Exit Code: " + exitCode + "): " + errorOutput.toString());
+                    throw new IOException("Error loading from Keychain (Exit Code: " + exitCode + "): " + errorOutput.toString());
                 }
-                // Andere Fehler ignorieren und null zurückgeben
+                // Ignore other errors and return null
                 return null;
             }
             
@@ -161,14 +161,14 @@ public final class KeychainKeyStore {
             
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Unterbrochen beim Laden aus Keychain", e);
+            throw new IOException("Interrupted while loading from Keychain", e);
         }
     }
     
     /**
-     * Löscht einen Verschlüsselungsschlüssel aus der macOS Keychain.
+     * Deletes an encryption key from the macOS Keychain.
      * 
-     * @throws IOException wenn der Schlüssel nicht gelöscht werden kann
+     * @throws IOException if the key cannot be deleted
      */
     public static void deleteKey() throws IOException {
         if (!isAvailable()) {
@@ -186,20 +186,20 @@ public final class KeychainKeyStore {
             Process process = pb.start();
             int exitCode = process.waitFor();
             
-            // Exit Code 44 bedeutet "item not found" - das ist OK
+            // Exit code 44 means "item not found" - that's OK
             if (exitCode != 0 && exitCode != 44) {
-                throw new IOException("Fehler beim Löschen aus Keychain (Exit Code: " + exitCode + ")");
+                throw new IOException("Error deleting from Keychain (Exit Code: " + exitCode + ")");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Unterbrochen beim Löschen aus Keychain", e);
+            throw new IOException("Interrupted while deleting from Keychain", e);
         }
     }
     
     /**
-     * Prüft, ob ein Schlüssel in der Keychain gespeichert ist.
+     * Checks if a key is stored in the Keychain.
      * 
-     * @return true wenn ein Schlüssel gefunden wurde
+     * @return true if a key was found
      */
     public static boolean hasKey() {
         if (!isAvailable()) {
@@ -214,4 +214,3 @@ public final class KeychainKeyStore {
         }
     }
 }
-

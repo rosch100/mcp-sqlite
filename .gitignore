@@ -37,6 +37,8 @@ libs/sqlite-jdbc-*.jar
 
 # Local configuration
 local.properties
+gradle.properties
+!gradle.properties.example
 
 # Python virtual environments (if any)
 .venv/

@@ -17,20 +17,13 @@ build/
 .DS_Store
 Thumbs.db
 
-# Documentation
+# Documentation (keep README for Docker Hub/registry)
 *.md
 !README.md
-LICENSE
-LICENSES.md
-NOTICE
-CONTRIBUTING.md
-PUBLISH.md
-CHANGELOG.md
 
-# Scripts
-*.sh
-*.bat
-*.py
+# Scripts (needed for build)
+# Keep gradlew and gradlew.bat for building
+# Keep shell scripts that might be needed
 
 # Test files
 test-*.sh
@@ -41,6 +34,6 @@ Test*.java
 *.example
 *.backup
 
-# GitHub
-.github/
+# Keep GitHub workflows for CI/CD
+# .github/ is needed for GitHub Actions
 
