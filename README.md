@@ -13,7 +13,6 @@ A Model Context Protocol (MCP) server for working with encrypted SQLite database
 - 🚀 **MCP Protocol**: Full Model Context Protocol implementation via STDIO
 - 🔒 **Security**: SQL identifier validation to prevent SQL injection
 - 🐛 **Debug Mode**: Optional debug output via `MCP_DEBUG` environment variable
-- 🌐 **Internationalization**: All messages and documentation in English
 - 📏 **Input Validation**: Comprehensive validation for limits, offsets, and identifiers
 
 ## Requirements
