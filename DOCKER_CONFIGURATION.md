@@ -479,7 +479,7 @@ Test the Docker container manually:
 ```bash
 docker run --rm -i \
   -v /path/to/your/database.sqlite:/data/database.sqlite:ro \
-  ghcr.io/rosch100/mcp-sqlite:0.2.2 \
+  ghcr.io/rosch100/mcp-sqlite:latest \
   --args '{"db_path":"/data/database.sqlite","passphrase":"your-passphrase"}'
 ```
 
@@ -491,7 +491,7 @@ Send an initialize request:
 echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | \
   docker run --rm -i \
   -v /path/to/your/database.sqlite:/data/database.sqlite:ro \
-  ghcr.io/rosch100/mcp-sqlite:0.2.2 \
+  ghcr.io/rosch100/mcp-sqlite:latest \
   --args '{"db_path":"/data/database.sqlite","passphrase":"your-passphrase"}'
 ```
 
