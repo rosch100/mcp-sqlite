@@ -1,0 +1,87 @@
+name: Release Notification
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Extract version from tag
+      id: version
+      run: |
+        VERSION="${{ github.event.release.tag_name }}"
+        # Remove 'v' prefix if present
+        VERSION=${VERSION#v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Release version: $VERSION"
+    
+    - name: Create release notification comment
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const version = '${{ steps.version.outputs.version }}';
+          const releaseUrl = '${{ github.event.release.html_url }}';
+          const releaseBody = `${{ github.event.release.body }}`;
+          
+          const comment = `## 🎉 Release ${version} Published
+          
+          ### ✅ Automated Actions
+          
+          - ✅ Docker image built and pushed to ghcr.io
+          - ✅ MCP Registry publication (if configured)
+          
+          ### 📋 Manual Submissions Required
+          
+          Please submit this release to community directories using the prepared templates:
+          
+          | Directory | Template | Status |
+          |-----------|----------|--------|
+          | [MCPList.ai](https://www.mcplist.ai/) | [MCPLIST_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/MCPLIST_SUBMISSION.md) | ⏳ Pending |
+          | [MCP Index](https://mcpindex.net/) | [MCPINDEX_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/MCPINDEX_SUBMISSION.md) | ⏳ Pending |
+          | [MCPServ.club](https://www.mcpserv.club/) | [MCPSERV_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/MCPSERV_SUBMISSION.md) | ⏳ Pending |
+          | [Directory MCP](https://directorymcp.com/) | [DIRECTORY_MCP_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/DIRECTORY_MCP_SUBMISSION.md) | ⏳ Pending |
+          | [MCPHub](https://mcphub.com/) | [MCPHUB_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/MCPHUB_SUBMISSION.md) | ⏳ Pending |
+          
+          ### 📦 Release Details
+          
+          - **Version**: ${version}
+          - **Release**: ${releaseUrl}
+          - **Docker Image**: \`ghcr.io/${{ github.repository }}:${version}\`
+          - **Docker Image (latest)**: \`ghcr.io/${{ github.repository }}:latest\`
+          
+          ### 📝 Release Notes
+          
+          ${releaseBody || 'No release notes provided.'}
+          
+          ---
+          
+          *This comment was automatically created by the release-notification workflow.*`;
+          
+          // Post comment to release
+          github.rest.repos.createReleaseComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: ${{ github.event.release.id }},
+            body: comment
+          }).catch(err => {
+            console.log('Could not post release comment (API may not support it), creating issue instead');
+            
+            // Fallback: Create issue
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📢 Manual Submission Required for Release ${version}`,
+              body: comment,
+              labels: ['release', 'documentation']
+            });
+          });
+

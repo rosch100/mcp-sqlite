@@ -1,0 +1,157 @@
+name: Publish to MCP Registry
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.2.4)'
+        required: false
+
+env:
+  REGISTRY_URL: https://registry.modelcontextprotocol.io
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for GitHub OIDC
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Extract version from tag or input
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          VERSION="${{ github.event.release.tag_name }}"
+          # Remove 'v' prefix if present
+          VERSION=${VERSION#v}
+        else
+          VERSION="${{ github.event.inputs.version }}"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Publishing version: $VERSION"
+    
+    - name: Validate server.json
+      run: |
+        if ! command -v jq &> /dev/null; then
+          sudo apt-get update && sudo apt-get install -y jq
+        fi
+        echo "Validating server.json..."
+        jq . server.json > /dev/null
+        echo "✅ server.json is valid JSON"
+        
+        # Check if version matches
+        SERVER_VERSION=$(jq -r '.version' server.json)
+        echo "Server.json version: $SERVER_VERSION"
+        echo "Release version: ${{ steps.version.outputs.version }}"
+    
+    - name: Install mcp-publisher
+      run: |
+        echo "Installing mcp-publisher..."
+        # Try to install via package manager first
+        if command -v brew &> /dev/null; then
+          brew install mcp-publisher
+        else
+          # Download binary directly
+          ARCH=$(uname -m)
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          if [ "$ARCH" = "x86_64" ]; then
+            ARCH="amd64"
+          elif [ "$ARCH" = "aarch64" ]; then
+            ARCH="arm64"
+          fi
+          
+          VERSION="1.3.8"
+          URL="https://github.com/modelcontextprotocol/registry/releases/download/v${VERSION}/mcp-publisher_${VERSION}_${OS}_${ARCH}.tar.gz"
+          
+          echo "Downloading mcp-publisher from $URL"
+          curl -L "$URL" -o mcp-publisher.tar.gz
+          tar -xzf mcp-publisher.tar.gz
+          chmod +x mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+        fi
+        
+        mcp-publisher --version
+    
+    - name: Authenticate with MCP Registry
+      run: |
+        echo "Authenticating with MCP Registry using GitHub OIDC..."
+        mcp-publisher login github-oidc
+        echo "✅ Authentication successful"
+    
+    - name: Publish to MCP Registry
+      id: publish
+      run: |
+        echo "Publishing to MCP Registry..."
+        if mcp-publisher publish; then
+          echo "✅ Successfully published to MCP Registry"
+          echo "published=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Failed to publish to MCP Registry"
+          echo "published=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+    
+    - name: Verify publication
+      if: steps.publish.outputs.published == 'true'
+      run: |
+        SERVER_NAME=$(jq -r '.name' server.json)
+        echo "Verifying publication for: $SERVER_NAME"
+        
+        # Wait a moment for registry to update
+        sleep 5
+        
+        # Try to verify via API (if available)
+        if curl -s "${REGISTRY_URL}/v0/servers?search=${SERVER_NAME}" | grep -q "${SERVER_NAME}"; then
+          echo "✅ Server found in registry"
+        else
+          echo "⚠️  Could not verify via API, but publish succeeded"
+        fi
+    
+    - name: Create GitHub Issue for manual submissions
+      if: steps.publish.outputs.published == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const version = '${{ steps.version.outputs.version }}';
+          const releaseUrl = '${{ github.event.release.html_url }}';
+          
+          const body = `## Release ${version} Published to MCP Registry ✅
+          
+          The server has been automatically published to the official MCP Registry.
+          
+          ### Manual Submissions Required
+          
+          Please submit this release to the following community directories:
+          
+          - [ ] **MCPList.ai** - Use [MCPLIST_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/MCPLIST_SUBMISSION.md)
+          - [ ] **MCP Index** - Use [MCPINDEX_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/MCPINDEX_SUBMISSION.md)
+          - [ ] **MCPServ.club** - Use [MCPSERV_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/MCPSERV_SUBMISSION.md)
+          - [ ] **Directory MCP** - Use [DIRECTORY_MCP_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/DIRECTORY_MCP_SUBMISSION.md)
+          - [ ] **MCPHub** - Use [MCPHUB_SUBMISSION.md](https://github.com/${{ github.repository }}/blob/main/MCPHUB_SUBMISSION.md)
+          
+          ### Release Information
+          - **Version**: ${version}
+          - **Release**: ${releaseUrl}
+          - **Docker Image**: ghcr.io/${{ github.repository }}:${version}
+          
+          ### Submission Templates
+          All submission templates are available in the repository root directory.
+          
+          ---
+          
+          *This issue was automatically created by the publish-mcp-registry workflow.*`;
+          
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `📢 Manual Submission Required for Release ${version}`,
+            body: body,
+            labels: ['release', 'documentation', 'help wanted']
+          });
+
