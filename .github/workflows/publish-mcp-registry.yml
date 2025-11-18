@@ -125,6 +125,49 @@ jobs:
         mcp-publisher login github-oidc
         echo "✅ Authentication successful"
     
+    - name: Wait for Docker image to be available
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        IMAGE_NAME="${{ github.repository }}"
+        MAX_ATTEMPTS=30
+        ATTEMPT=0
+        
+        echo "Waiting for Docker image to be available: ghcr.io/${IMAGE_NAME}:${VERSION}"
+        echo "This may take a few minutes while the Docker build completes..."
+        
+        while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+          ATTEMPT=$((ATTEMPT + 1))
+          echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking if image exists..."
+          
+          # Check if image exists using GitHub Container Registry API
+          # Note: This checks if the package version exists
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${IMAGE_NAME#*/}/versions" || echo "000")
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            # Check if specific version tag exists in the versions list
+            VERSIONS=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/users/${{ github.repository_owner }}/packages/container/${IMAGE_NAME#*/}/versions" | \
+              jq -r ".[].metadata.container.tags[]" 2>/dev/null || echo "")
+            
+            if echo "$VERSIONS" | grep -q "^${VERSION}$"; then
+              echo "✅ Docker image ghcr.io/${IMAGE_NAME}:${VERSION} is now available!"
+              break
+            fi
+          fi
+          
+          if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+            echo "⚠️  Docker image not found after $MAX_ATTEMPTS attempts (5 minutes)"
+            echo "The Docker build may still be in progress."
+            echo "Continuing anyway - if publish fails, wait for Docker build to complete and retry."
+          else
+            echo "Image not yet available, waiting 10 seconds..."
+            sleep 10
+          fi
+        done
+    
     - name: Publish to MCP Registry
       id: publish
       run: |
@@ -153,6 +196,9 @@ jobs:
           echo ""
           echo "The server will be published as a NEW entry with the new name."
           echo "The old entry (mcp-sqlite) will remain in the registry."
+          echo ""
+          echo "If the error was about missing Docker image, wait for the Docker build"
+          echo "to complete and then manually trigger this workflow again."
           
           exit $EXIT_CODE
         fi
