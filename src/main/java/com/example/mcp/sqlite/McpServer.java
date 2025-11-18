@@ -406,12 +406,12 @@ public class McpServer {
             ? params.get("protocolVersion").getAsString() 
             : "2024-11-05";
         result.addProperty("protocolVersion", clientProtocolVersion);
-        result.addProperty("version", "0.3.0");
+        result.addProperty("version", "0.3.1");
         result.addProperty("serverName", "encrypted-sqlite-mcp");
 
         JsonObject serverInfo = new JsonObject();
         serverInfo.addProperty("name", "encrypted-sqlite-mcp");
-        serverInfo.addProperty("version", "0.3.0");
+        serverInfo.addProperty("version", "0.3.1");
         result.add("serverInfo", serverInfo);
 
         JsonObject capabilities = new JsonObject();
