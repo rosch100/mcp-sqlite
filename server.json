@@ -44,7 +44,7 @@
               "-i",
               "-v",
               "${DB_PATH}:/data/database.sqlite:ro",
-              "ghcr.io/rosch100/mcp-sqlite:0.2.3",
+              "ghcr.io/rosch100/mcp-sqlite:latest",
               "--args",
               "{\"db_path\":\"/data/database.sqlite\",\"passphrase\":\"${DB_PASSPHRASE}\"}"
             ]
